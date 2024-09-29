@@ -1,5 +1,4 @@
 import pygame
-from pathlib import Path
 from settings import *
 from support import import_folder
 from timer import Timer
@@ -49,7 +48,6 @@ class Player(pygame.sprite.Sprite):
 
     def _load_assets(self):
         # Get the current file's directory
-        current_dir = Path(__file__).parent
         graphics_dir = current_dir.parent / 'graphics' / 'character'
 
         self.animations = {direction: [] for direction in [
