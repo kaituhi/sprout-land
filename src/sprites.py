@@ -1,6 +1,7 @@
 import pygame
 from settings import *
 
+
 class Generic(pygame.sprite.Sprite):
     def __init__(self, position, surf, groups, z=None):
         """Generic sprite class for static objects."""
@@ -8,6 +9,8 @@ class Generic(pygame.sprite.Sprite):
         self.image = surf
         self.rect = self.image.get_rect(topleft=position)
         self.z = LAYERS['main'] if z is None else z
+        self.hitbox = self.rect.copy().inflate(-self.rect.width * 0.2, -self.rect.height * 0.75)
+
 
 class Water(Generic):
     def __init__(self, position, frames, groups):
@@ -27,10 +30,13 @@ class Water(Generic):
         """Update the water animation."""
         self.animate(delta_time)
 
+
 class WildFlower(Generic):
     def __init__(self, position, surf, groups):
         """Wildflower sprite class."""
         super().__init__(position, surf, groups)
+        self.hitbox = self.rect.copy().inflate(-20, -self.rect.height * 0.9)
+
 
 class Tree(Generic):
     def __init__(self, position, surf, groups, name):
