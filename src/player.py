@@ -5,7 +5,7 @@ from timer import Timer
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, position, group, collision_sprites, tree_sprites, interaction, soil_layer):
+    def __init__(self, position, group, collision_sprites, tree_sprites, interaction, soil_layer, toggle_shop):
         super().__init__(group)
 
         self._load_assets()
@@ -50,12 +50,18 @@ class Player(pygame.sprite.Sprite):
             'corn': 0,
             'tomato': 0
         }
+        self.seed_inventory = {
+            'corn': 5,
+            'tomato': 5
+        }
+        self.money = 200
 
         # interaction
         self.tree_sprites = tree_sprites
         self.interaction = interaction
         self.sleep = False
         self.soil_layer = soil_layer
+        self.toggle_shop = toggle_shop
 
     def use_tool(self):
         if self.selected_tool == 'hoe':
@@ -75,7 +81,9 @@ class Player(pygame.sprite.Sprite):
         )
 
     def use_seed(self):
-        self.soil_layer.plant_seed(self.target_position, self.selected_seed)
+        if self.seed_inventory[self.selected_seed] > 0:
+            self.soil_layer.plant_seed(self.target_position, self.selected_seed)
+            self.seed_inventory[self.selected_seed] -= 1
 
     def _load_assets(self):
         """Load character animations from the graphics directory."""
@@ -115,7 +123,7 @@ class Player(pygame.sprite.Sprite):
                 collided_interaction_sprite = pygame.sprite.spritecollide(self, self.interaction, False)
                 if collided_interaction_sprite:
                     if collided_interaction_sprite[0].name == 'Trader':
-                        pass
+                        self.toggle_shop()
                     else:
                         self.status = 'left_idle'
                         self.sleep = True
