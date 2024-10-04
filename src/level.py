@@ -7,7 +7,7 @@ from overlay import Overlay
 from sprites import Generic, Water, WildFlower, Tree, Interaction
 from support import import_folder
 from transition import Transition
-from soil import SoliLayer
+from soil import SoilLayer
 
 
 class Level:
@@ -20,7 +20,7 @@ class Level:
         self.interaction_sprites = pygame.sprite.Group()
 
         self.player = None  # Initialize player as None
-        self.soil_layer = SoliLayer(self.all_sprites)
+        self.soil_layer = SoilLayer(self.all_sprites)
         self.setup_level()
         self.overlay = Overlay(self.player)  # Pass player after it's been set up
         self.transition = Transition(self.reset, self.player)

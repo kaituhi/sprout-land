@@ -1,14 +1,18 @@
 from pathlib import Path
 import pygame
 
-def import_folder(path):
-    surface_list = []
-    path = Path(path) 
 
-    # Walk through the directory
-    for img_file in path.glob('*'):  
-        if img_file.is_file(): 
-            image_surface = pygame.image.load(img_file).convert_alpha()
-            surface_list.append(image_surface)
-    
-    return surface_list
+def import_folder(path: str):
+    path = Path(path)
+    return [
+        pygame.image.load(img_file).convert_alpha() 
+        for img_file in path.glob('*') if img_file.is_file()
+    ]
+
+
+def import_folder_dict(path: str):
+    path = Path(path)
+    return {
+        img_file.stem: pygame.image.load(img_file).convert_alpha() 
+        for img_file in path.glob('*') if img_file.is_file()
+    }
