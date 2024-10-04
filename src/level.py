@@ -9,7 +9,7 @@ from sprites import Generic, Water, WildFlower, Tree, Interaction, Particle
 from support import import_folder
 from transition import Transition
 from soil import SoilLayer
-from sky import Rain
+from sky import Rain, Sky
 
 
 class Level:
@@ -31,6 +31,7 @@ class Level:
         self.rain = Rain(self.all_sprites)
         self.raining = randint(0, 10) > 3
         self.soil_layer.raining = self.raining
+        self.sky = Sky()
 
     def setup_level(self):
         """Load the level from the TMX file and initialize sprites."""
@@ -130,6 +131,9 @@ class Level:
                 apple.kill()
             tree.create_fruit()
 
+        # sky
+        self.sky.start_color = [255, 255, 255]
+
     def plant_collision(self):
         if self.soil_layer.plant_sprites:
             for plant in self.soil_layer.plant_sprites.sprites():
@@ -139,17 +143,20 @@ class Level:
                     Particle(plant.rect.topleft, plant.image, self.all_sprites, z=LAYERS['main'])
                     self.soil_layer.grid[plant.rect.centery // TILE_SIZE][plant.rect.centerx // TILE_SIZE].remove('P')
 
-    def run(self, dt):
+    def run(self, delta_time):
         """Update and draw the level."""
         self.display_surface.fill('black')
         self.all_sprites.custom_draw(self.player)
-        self.all_sprites.update(dt)
+        self.all_sprites.update(delta_time)
         self.overlay.display()
         self.plant_collision()
 
         # rain
         if self.raining:
             self.rain.update()
+
+        # daytime
+        self.sky.display(delta_time)
 
         # transition overlay
         if self.player.sleep:
