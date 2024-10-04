@@ -30,13 +30,21 @@ class Level:
 
         # sky
         self.rain = Rain(self.all_sprites)
-        self.raining = randint(0, 10) > 3
+        self.raining = randint(0, 10) > 7
         self.soil_layer.raining = self.raining
         self.sky = Sky()
 
         # shop
         self.menu = Menu(self.player, self.toggle_shop)
         self.shop_active = False
+
+        # music
+        self.success = pygame.mixer.Sound(current_dir.parent / Path('audio/success.wav'))
+        self.success.set_volume(0.3)
+
+        self.music = pygame.mixer.Sound(current_dir.parent / Path('audio/music.mp3'))
+        self.music.set_volume(0.3)
+        self.music.play(loops=-1)
 
     def setup_level(self):
         """Load the level from the TMX file and initialize sprites."""
@@ -53,6 +61,7 @@ class Level:
 
     def player_add(self, item):
         self.player.inventory_items[item] += 1
+        self.success.play()
 
     def load_house(self, tmx_data):
         """Load house-related sprites from the TMX data."""

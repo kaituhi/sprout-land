@@ -2,7 +2,7 @@ import pygame
 from pathlib import Path
 from random import choice
 from pytmx.util_pygame import load_pygame
-from settings import TILE_SIZE, LAYERS, GROWTH_SPEED
+from settings import TILE_SIZE, LAYERS, GROWTH_SPEED, current_dir
 from support import import_folder_dict, import_folder
 
 
@@ -86,6 +86,13 @@ class SoilLayer:
         self.create_soil_grid()
         self.create_hit_rects()
 
+        # sounds
+        self.hoe_sound = pygame.mixer.Sound(current_dir.parent / Path('audio/hoe.wav'))
+        self.hoe_sound.set_volume(0.1)
+
+        self.plant_sound = pygame.mixer.Sound(current_dir.parent / Path('audio/plant.wav'))
+        self.plant_sound.set_volume(0.1)
+
     def create_soil_grid(self):
         """
         Creates a grid based on the 'Farmable' layer from the map, marking farmable spots.
@@ -116,6 +123,8 @@ class SoilLayer:
         """
         for rect in self.hit_rects:
             if rect.collidepoint(point):
+                self.hoe_sound.play()
+
                 x = rect.x // TILE_SIZE
                 y = rect.y // TILE_SIZE
                 if 'F' in self.grid[y][x]:
@@ -168,6 +177,8 @@ class SoilLayer:
     def plant_seed(self, target_position, seed):
         for soil_sprite in self.soil_sprites.sprites():
             if soil_sprite.rect.collidepoint(target_position):
+                self.plant_sound.play()
+
                 x = soil_sprite.rect.x // TILE_SIZE
                 y = soil_sprite.rect.y // TILE_SIZE
 

@@ -2,7 +2,6 @@ import pygame
 from settings import *
 from pathlib import Path
 from random import randint, choice
-from timer import Timer
 
 
 class Generic(pygame.sprite.Sprite):
@@ -76,7 +75,6 @@ class Tree(Generic):
         self.stump_surf = pygame.image.load(
             current_dir.parent / 'graphics' / 'stumps' / f'{name.lower()}.png'
         ).convert_alpha()
-        self.invul_timer = Timer(200)
 
         self.apple_surf = pygame.image.load(current_dir.parent / 'graphics' / 'fruit' / 'apple.png')
         self.apple_position = APPLE_POSITIONS[name]
@@ -85,8 +83,14 @@ class Tree(Generic):
 
         self.player_add = player_add
 
+        # sounds
+        self.axe_sound = pygame.mixer.Sound(current_dir.parent / Path('audio/axe.mp3'))
+
     def damage(self):
         self.health -= 1
+
+        # play sound
+        self.axe_sound.play()
 
         if len(self.apple_sprites.sprites()) > 0:
             random_apple = choice(self.apple_sprites.sprites())
