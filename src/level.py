@@ -1,5 +1,6 @@
 import pygame
 from pathlib import Path
+from random import randint
 from pytmx.util_pygame import load_pygame
 from settings import *
 from player import Player
@@ -8,6 +9,7 @@ from sprites import Generic, Water, WildFlower, Tree, Interaction
 from support import import_folder
 from transition import Transition
 from soil import SoilLayer
+from sky import Rain
 
 
 class Level:
@@ -24,6 +26,11 @@ class Level:
         self.setup_level()
         self.overlay = Overlay(self.player)  # Pass player after it's been set up
         self.transition = Transition(self.reset, self.player)
+
+        # sky
+        self.rain = Rain(self.all_sprites)
+        self.raining = randint(0, 10) > 3
+        self.soil_layer.raining = self.raining
 
     def setup_level(self):
         """Load the level from the TMX file and initialize sprites."""
@@ -107,7 +114,13 @@ class Level:
         )
 
     def reset(self):
+        # soil
         self.soil_layer.remove_water()
+        self.raining = randint(0, 10) > 3
+        self.soil_layer.raining = self.raining
+        if self.raining:
+            self.soil_layer.water_all()
+
         # apples on the trees
         for tree in self.tree_sprites.sprites():
             for apple in tree.apple_sprites.sprites():
@@ -121,6 +134,11 @@ class Level:
         self.all_sprites.update(dt)
         self.overlay.display()
 
+        # rain
+        if self.raining:
+            self.rain.update()
+
+        # transition overlay
         if self.player.sleep:
             self.transition.play()
 
