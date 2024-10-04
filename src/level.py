@@ -4,8 +4,10 @@ from pytmx.util_pygame import load_pygame
 from settings import *
 from player import Player
 from overlay import Overlay
-from sprites import Generic, Water, WildFlower, Tree
+from sprites import Generic, Water, WildFlower, Tree, Interaction
 from support import import_folder
+from transition import Transition
+
 
 class Level:
     def __init__(self):
@@ -13,10 +15,13 @@ class Level:
         self.display_surface = pygame.display.get_surface()
         self.all_sprites = CameraGroup()
         self.collision_sprites = pygame.sprite.Group()
+        self.tree_sprites = pygame.sprite.Group()
+        self.interaction_sprites = pygame.sprite.Group()
 
         self.player = None  # Initialize player as None
         self.setup_level()
         self.overlay = Overlay(self.player)  # Pass player after it's been set up
+        self.transition = Transition(self.reset, self.player)
 
     def setup_level(self):
         """Load the level from the TMX file and initialize sprites."""
@@ -30,6 +35,9 @@ class Level:
         self.load_collision_tiles(tmx_data)
         self.load_player(tmx_data)  # Player should be set up first
         self.load_ground()
+
+    def player_add(self, item):
+        self.player.inventory_items[item] += 1
 
     def load_house(self, tmx_data):
         """Load house-related sprites from the TMX data."""
@@ -53,7 +61,13 @@ class Level:
     def load_trees(self, tmx_data):
         """Load tree sprites."""
         for obj in tmx_data.get_layer_by_name('Trees'):
-            Tree((obj.x, obj.y), obj.image, [self.all_sprites, self.collision_sprites], obj.name)
+            Tree(
+                position=(obj.x, obj.y), 
+                surf=obj.image, 
+                groups=[self.all_sprites, self.collision_sprites, self.tree_sprites], 
+                name=obj.name,
+                player_add=self.player_add
+            )
 
     def load_wildflowers(self, tmx_data):
         """Load wildflower sprites."""
@@ -69,7 +83,15 @@ class Level:
         """Load the player sprite from TMX data."""
         for obj in tmx_data.get_layer_by_name('Player'):
             if obj.name == 'Start':
-                self.player = Player((obj.x, obj.y), self.all_sprites, self.collision_sprites)
+                self.player = Player(
+                    position=(obj.x, obj.y), 
+                    group=self.all_sprites, 
+                    collision_sprites=self.collision_sprites,
+                    tree_sprites=self.tree_sprites,
+                    interaction=self.interaction_sprites
+                )
+            if obj.name == 'Bed':
+                Interaction((obj.x, obj.y), (obj.width, obj.height), self.interaction_sprites, obj.name)
 
     def load_ground(self):
         """Load the ground sprite."""
@@ -81,12 +103,22 @@ class Level:
             z=LAYERS['ground']
         )
 
+    def reset(self):
+        # apples on the trees
+        for tree in self.tree_sprites.sprites():
+            for apple in tree.apple_sprites.sprites():
+                apple.kill()
+            tree.create_fruit()
+
     def run(self, dt):
         """Update and draw the level."""
         self.display_surface.fill('black')
         self.all_sprites.custom_draw(self.player)
         self.all_sprites.update(dt)
         self.overlay.display()
+
+        if self.player.sleep:
+            self.transition.play()
 
 
 class CameraGroup(pygame.sprite.Group):

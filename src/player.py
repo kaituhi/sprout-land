@@ -5,7 +5,7 @@ from timer import Timer
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, position, group, collision_sprites):
+    def __init__(self, position, group, collision_sprites, tree_sprites, interaction):
         super().__init__(group)
 
         self._load_assets()
@@ -43,9 +43,35 @@ class Player(pygame.sprite.Sprite):
         self.seed_index = 0
         self.selected_seed = self.seeds[self.seed_index]
 
+        # Inventory
+        self.inventory_items = {
+            'wood': 0,
+            'apple': 0,
+            'corn': 0,
+            'tomato': 0
+        }
+
+        # interaction
+        self.tree_sprites = tree_sprites
+        self.interaction = interaction
+        self.sleep = False
+
     def use_tool(self):
-        # Implement tool use functionality
-        pass
+        if self.selected_tool == 'hoe':
+            pass
+
+        if self.selected_tool == 'axe':
+            for tree in self.tree_sprites.sprites():
+                if tree.rect.collidepoint(self.target_position):
+                    tree.damage()
+
+        if self.selected_tool == 'water':
+            pass
+
+    def get_target_position(self):
+        self.target_position = (
+            self.rect.center + PLAYER_TOOL_OFFSET[self.status.split('_')[0]]
+        )
 
     def use_seed(self):
         # Implement seed use functionality
@@ -80,10 +106,19 @@ class Player(pygame.sprite.Sprite):
     def _handle_input(self):
         keys = pygame.key.get_pressed()
 
-        if not self.timers['tool_use'].active:
+        if not self.timers['tool_use'].active and not self.sleep:
             self.handle_movement(keys)
             self.handle_tool_usage(keys)
             self.handle_seed_usage(keys)
+
+            if keys[pygame.K_RETURN]:
+                collided_interaction_sprite = pygame.sprite.spritecollide(self, self.interaction, False)
+                if collided_interaction_sprite:
+                    if collided_interaction_sprite[0].name == 'Trader':
+                        pass
+                    else:
+                        self.status = 'left_idle'
+                        self.sleep = True
 
     def handle_movement(self, keys):
         """Handle player movement and update status."""
@@ -189,5 +224,7 @@ class Player(pygame.sprite.Sprite):
         self._handle_input()
         self._update_status()
         self._update_timers()
+        self.get_target_position()
+
         self._move(delta_time)
         self.animate(delta_time)
