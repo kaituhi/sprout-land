@@ -75,8 +75,7 @@ class Player(pygame.sprite.Sprite):
         )
 
     def use_seed(self):
-        # Implement seed use functionality
-        pass
+        self.soil_layer.plant_seed(self.target_position, self.selected_seed)
 
     def _load_assets(self):
         """Load character animations from the graphics directory."""

@@ -2,7 +2,7 @@ import pygame
 from pathlib import Path
 from random import choice
 from pytmx.util_pygame import load_pygame
-from settings import TILE_SIZE, LAYERS
+from settings import TILE_SIZE, LAYERS, GROWTH_SPEED
 from support import import_folder_dict, import_folder
 
 
@@ -25,15 +25,58 @@ class WaterTile(pygame.sprite.Sprite):
         self.z = LAYERS['soil water']
 
 
+class Plant(pygame.sprite.Sprite):
+    def __init__(self, plant_type, groups, soil, check_watered):
+        super().__init__(groups)
+        # setup
+        self.plant_type = plant_type
+        self.frames = import_folder(Path(f'graphics/fruit/{plant_type}'))
+        self.soil = soil
+        self.check_watered = check_watered
+
+        # plant growing
+        self.age = 0
+        self.max_age = len(self.frames) - 1
+        self.grow_speed = GROWTH_SPEED[plant_type]
+        self.harvestable = False
+
+        # sprite set up
+        self.image = self.frames[self.age]
+        self.y_offsett = -16 if plant_type == 'corn' else -8
+        self.rect = self.image.get_rect(
+            midbottom=soil.rect.midbottom + pygame.math.Vector2(0, self.y_offsett)
+        )
+        self.z = LAYERS['ground plant']
+
+    def grow(self):
+        if self.check_watered(self.rect.center):
+            self.age += self.grow_speed
+
+            if int(self.age) > 0:
+                self.z = LAYERS['main']
+                self.hitbox = self.rect.copy().inflate(-26, -self.rect.height * 0.4)
+
+            if self.age >= self.max_age:
+                self.age = self.max_age
+                self.harvestable = True
+
+            self.image = self.frames[int(self.age)]
+            self.rect = self.image
+            self.rect = self.image.get_rect(
+                midbottom=self.soil.rect.midbottom + pygame.math.Vector2(0, self.y_offsett)
+            )
+
 class SoilLayer:
     """
     Manages the soil tiles and their interaction in the game world.
     """
-    def __init__(self, all_sprites):
+    def __init__(self, all_sprites, collision_sprites):
         # sprite groups
         self.all_sprites = all_sprites
+        self.collision_sprites = collision_sprites
         self.soil_sprites = pygame.sprite.Group()
         self.water_sprites = pygame.sprite.Group()
+        self.plant_sprites = pygame.sprite.Group()
 
         # graphics
         self.soil_surfs = import_folder_dict(Path('graphics/soil'))
@@ -114,6 +157,27 @@ class SoilLayer:
             for cell in row:
                 if 'W' in cell:
                     cell.remove('W')
+
+    def check_watered(self, position):
+        x = position[0] // TILE_SIZE
+        y = position[1] // TILE_SIZE
+        cell = self.grid[y][x]
+        is_watered = 'W' in cell
+        return is_watered
+
+    def plant_seed(self, target_position, seed):
+        for soil_sprite in self.soil_sprites.sprites():
+            if soil_sprite.rect.collidepoint(target_position):
+                x = soil_sprite.rect.x // TILE_SIZE
+                y = soil_sprite.rect.y // TILE_SIZE
+
+                if 'P' not in self.grid[y][x]:
+                    self.grid[y][x].append('P')
+                    Plant(seed, [self.all_sprites, self.plant_sprites, self.collision_sprites], soil_sprite, self.check_watered)
+
+    def update_plants(self):
+        for plant in self.plant_sprites.sprites():
+            plant.grow()
 
     def create_soil_tiles(self):
         """
