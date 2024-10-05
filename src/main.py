@@ -6,8 +6,8 @@ from level import Level
 
 class Game:
     def __init__(self):
+        """Initialize the game, set up the screen and clock."""
         pygame.init()
-
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Sprout Land")
         self.clock = pygame.time.Clock()
@@ -15,17 +15,19 @@ class Game:
 
     def run(self):
         while True:
-            self._process_events()
-            delta_time = self.clock.tick() / 1000  # Convert milliseconds to seconds
+            self._handle_events()
+            delta_time = self.clock.tick() / 1000
             self.level.run(delta_time)
             pygame.display.update()
 
-    def _process_events(self):
+    def _handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+                self._quit_game()
 
+    def _quit_game(self):
+        pygame.quit()
+        sys.exit()
 
 if __name__ == '__main__':
     game_instance = Game()

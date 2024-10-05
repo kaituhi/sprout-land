@@ -1,11 +1,13 @@
 import pygame
-from settings import *
+from pathlib import Path
+from settings import LAYERS, PLAYER_TOOL_OFFSET
 from support import import_folder
 from timer import Timer
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, position, group, collision_sprites, tree_sprites, interaction, soil_layer, toggle_shop):
+    def __init__(self, position, group, collision_sprites, tree_sprites,
+                 interaction, soil_layer, toggle_shop):
         super().__init__(group)
 
         self._load_assets()
@@ -44,62 +46,65 @@ class Player(pygame.sprite.Sprite):
         self.selected_seed = self.seeds[self.seed_index]
 
         # Inventory
-        self.inventory_items = {
-            'wood': 0,
-            'apple': 0,
-            'corn': 0,
-            'tomato': 0
-        }
-        self.seed_inventory = {
-            'corn': 5,
-            'tomato': 5
-        }
+        self.inventory_items = {item: 0 for item in 
+                                ['wood', 'apple', 'corn', 'tomato']}
+        self.seed_inventory = {item: 5 for item in self.seeds}
         self.money = 200
 
-        # interaction
+        # Interaction
         self.tree_sprites = tree_sprites
         self.interaction = interaction
-        self.sleep = False
+        self.is_sleeping = False
         self.soil_layer = soil_layer
         self.toggle_shop = toggle_shop
 
-        # sounds
-        self.watering = pygame.mixer.Sound(current_dir.parent / Path('audio/water.mp3'))
-        self.watering.set_volume(0.2)
+        # Sounds
+        self.watering_sound = self._load_sound('audio/water.mp3')
+
+    def _load_sound(self, file_path):
+        """Load a sound from the given file path."""
+        sound = pygame.mixer.Sound(Path(file_path))
+        sound.set_volume(0.2)
+        return sound
 
     def use_tool(self):
+        """Use the selected tool."""
         if self.selected_tool == 'hoe':
             self.soil_layer.get_hit(self.target_position)
-
-        if self.selected_tool == 'axe':
-            for tree in self.tree_sprites.sprites():
-                if tree.rect.collidepoint(self.target_position):
-                    tree.damage()
-
-        if self.selected_tool == 'water':
+        elif self.selected_tool == 'axe':
+            self._damage_tree()
+        elif self.selected_tool == 'water':
             self.soil_layer.water(self.target_position)
-            self.watering.play()
+            self.watering_sound.play()
+
+    def _damage_tree(self):
+        """Damage the tree at the target position."""
+        for tree in self.tree_sprites.sprites():
+            if tree.rect.collidepoint(self.target_position):
+                tree.damage()
 
     def get_target_position(self):
-        self.target_position = (
-            self.rect.center + PLAYER_TOOL_OFFSET[self.status.split('_')[0]]
-        )
+        """Calculate the target position based on the player's current status."""
+        offset = PLAYER_TOOL_OFFSET[self.status.split('_')[0]]
+        self.target_position = self.rect.center + offset
 
     def use_seed(self):
+        """Plant the selected seed if available."""
         if self.seed_inventory[self.selected_seed] > 0:
-            self.soil_layer.plant_seed(self.target_position, self.selected_seed)
+            self.soil_layer.plant_seed(
+                self.target_position, self.selected_seed)
             self.seed_inventory[self.selected_seed] -= 1
 
     def _load_assets(self):
         """Load character animations from the graphics directory."""
-        graphics_dir = current_dir.parent / 'graphics' / 'character'
-        self.animations = {direction: [] for direction in self._animation_directions()}
-
-        for animation in self.animations.keys():
-            full_path = graphics_dir / animation
-            self.animations[animation] = import_folder(full_path)
+        graphics_dir = Path('graphics/character')
+        self.animations = {
+            direction: import_folder(graphics_dir / direction) 
+            for direction in self._animation_directions()
+        }
 
     def _animation_directions(self):
+        """Return a list of animation directions."""
         return [
             'up', 'down', 'left', 'right',
             'right_idle', 'left_idle', 'up_idle', 'down_idle',
@@ -117,26 +122,34 @@ class Player(pygame.sprite.Sprite):
         self.image = self.animations[self.status][int(self.frame_index)]
 
     def _handle_input(self):
+        """Handle player input for movement and actions."""
         keys = pygame.key.get_pressed()
 
-        if not self.timers['tool_use'].active and not self.sleep:
+        if not self.timers['tool_use'].is_active and not self.is_sleeping:
             self.handle_movement(keys)
             self.handle_tool_usage(keys)
             self.handle_seed_usage(keys)
 
             if keys[pygame.K_RETURN]:
-                collided_interaction_sprite = pygame.sprite.spritecollide(self, self.interaction, False)
-                if collided_interaction_sprite:
-                    if collided_interaction_sprite[0].name == 'Trader':
-                        self.toggle_shop()
-                    else:
-                        self.status = 'left_idle'
-                        self.sleep = True
+                self._handle_interaction()
+
+    def _handle_interaction(self):
+        """Handle player interaction with nearby sprites."""
+        collided_interaction_sprite = pygame.sprite.spritecollide(
+            self, self.interaction, False)
+        if collided_interaction_sprite:
+            if collided_interaction_sprite[0].name == 'Trader':
+                self.toggle_shop()
+            else:
+                self.status = 'left_idle'
+                self.is_sleeping = True
 
     def handle_movement(self, keys):
         """Handle player movement and update status."""
-        self.direction.y = -1 if keys[pygame.K_UP] else (1 if keys[pygame.K_DOWN] else 0)
-        self.direction.x = 1 if keys[pygame.K_RIGHT] else (-1 if keys[pygame.K_LEFT] else 0)
+        self.direction.y = -1 if keys[pygame.K_w] else (1 
+            if keys[pygame.K_s] else 0)
+        self.direction.x = 1 if keys[pygame.K_d] else (-1 
+            if keys[pygame.K_a] else 0)
 
         if self.direction.magnitude() > 0:
             self.update_status_based_on_direction()
@@ -144,24 +157,24 @@ class Player(pygame.sprite.Sprite):
     def handle_tool_usage(self, keys):
         """Handle tool usage and switching."""
         if keys[pygame.K_SPACE]:
-            self.timers['tool_use'].activate()
+            self.timers['tool_use'].start()
             self.direction = pygame.math.Vector2()
             self.frame_index = 0
 
-        if keys[pygame.K_q] and not self.timers['tool_switch'].active:
-            self.timers['tool_switch'].activate()
+        if keys[pygame.K_q] and not self.timers['tool_switch'].is_active:
+            self.timers['tool_switch'].start()
             self.tool_index = (self.tool_index + 1) % len(self.tools)
             self.selected_tool = self.tools[self.tool_index]
 
     def handle_seed_usage(self, keys):
         """Handle seed usage and switching."""
         if keys[pygame.K_LCTRL]:
-            self.timers['seed_use'].activate()
+            self.timers['seed_use'].start()
             self.direction = pygame.math.Vector2()
             self.frame_index = 0
 
-        if keys[pygame.K_e] and not self.timers['seed_switch'].active:
-            self.timers['seed_switch'].activate()
+        if keys[pygame.K_e] and not self.timers['seed_switch'].is_active:
+            self.timers['seed_switch'].start()
             self.seed_index = (self.seed_index + 1) % len(self.seeds)
             self.selected_seed = self.seeds[self.seed_index]
 
@@ -178,13 +191,15 @@ class Player(pygame.sprite.Sprite):
             self.status = 'left'
 
     def _update_status(self):
+        """Update player status based on movement and tool usage."""
         if self.direction.magnitude() == 0:
             self.status = f"{self.status.split('_')[0]}_idle"
 
-        if self.timers['tool_use'].active:
+        if self.timers['tool_use'].is_active:
             self.status = f"{self.status.split('_')[0]}_{self.selected_tool}"
 
     def _update_timers(self):
+        """Update all active timers."""
         for timer in self.timers.values():
             timer.update()
 
@@ -197,19 +212,32 @@ class Player(pygame.sprite.Sprite):
     def resolve_collision(self, direction, sprite):
         """Resolve collision with the specified direction."""
         if direction == 'horizontal':
-            if self.direction.x > 0:  # Moving right
-                self.hitbox.right = sprite.hitbox.left
-            elif self.direction.x < 0:  # Moving left
-                self.hitbox.left = sprite.hitbox.right
-            self.rect.centerx = self.hitbox.centerx
-            self.position.x = self.hitbox.centerx
+            self._resolve_horizontal_collision(sprite)
         elif direction == 'vertical':
-            if self.direction.y > 0:  # Moving down
-                self.hitbox.bottom = sprite.hitbox.top
-            elif self.direction.y < 0:  # Moving up
-                self.hitbox.top = sprite.hitbox.bottom
-            self.rect.centery = self.hitbox.centery
-            self.position.y = self.hitbox.centery
+            self._resolve_vertical_collision(sprite)
+
+    def _resolve_horizontal_collision(self, sprite):
+        """Resolve horizontal collision with another sprite."""
+        if self.direction.x > 0:  # Moving right
+            self.hitbox.right = sprite.hitbox.left
+        elif self.direction.x < 0:  # Moving left
+            self.hitbox.left = sprite.hitbox.right
+        self._update_position()
+
+    def _resolve_vertical_collision(self, sprite):
+        """Resolve vertical collision with another sprite."""
+        if self.direction.y > 0:  # Moving down
+            self.hitbox.bottom = sprite.hitbox.top
+        elif self.direction.y < 0:  # Moving up
+            self.hitbox.top = sprite.hitbox.bottom
+        self._update_position()
+
+    def _update_position(self):
+        """Update the player's rectangle and position based on hitbox."""
+        self.rect.centerx = self.hitbox.centerx
+        self.rect.centery = self.hitbox.centery
+        self.position.x = self.hitbox.centerx
+        self.position.y = self.hitbox.centery
 
     def _move(self, delta_time):
         """Update player position based on direction and speed."""
@@ -234,10 +262,10 @@ class Player(pygame.sprite.Sprite):
         self._collision('vertical')
 
     def update(self, delta_time):
+        """Update the player state based on delta time."""
         self._handle_input()
         self._update_status()
         self._update_timers()
         self.get_target_position()
-
         self._move(delta_time)
         self.animate(delta_time)
