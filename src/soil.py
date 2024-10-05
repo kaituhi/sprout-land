@@ -7,9 +7,8 @@ from support import import_folder_dict, import_folder
 
 
 class SoilTile(pygame.sprite.Sprite):
-    """
-    Represents a single soil tile in the game.
-    """
+    """Represents a single soil tile in the game."""
+    
     def __init__(self, position, surf, groups):
         super().__init__(groups)
         self.image = surf
@@ -22,31 +21,31 @@ class WaterTile(pygame.sprite.Sprite):
         super().__init__(groups)
         self.image = surf
         self.rect = self.image.get_rect(topleft=position)
-        self.z = LAYERS['soil water']
+        self.z = LAYERS['soil_water']
 
 
 class Plant(pygame.sprite.Sprite):
     def __init__(self, plant_type, groups, soil, check_watered):
         super().__init__(groups)
-        # setup
+        # Setup
         self.plant_type = plant_type
         self.frames = import_folder(Path(f'graphics/fruit/{plant_type}'))
         self.soil = soil
         self.check_watered = check_watered
 
-        # plant growing
+        # Plant growing
         self.age = 0
         self.max_age = len(self.frames) - 1
         self.grow_speed = GROWTH_SPEED[plant_type]
         self.harvestable = False
 
-        # sprite set up
+        # Sprite setup
         self.image = self.frames[self.age]
         self.y_offsett = -16 if plant_type == 'corn' else -8
         self.rect = self.image.get_rect(
             midbottom=soil.rect.midbottom + pygame.math.Vector2(0, self.y_offsett)
         )
-        self.z = LAYERS['ground plant']
+        self.z = LAYERS['ground_plant']
 
     def grow(self):
         if self.check_watered(self.rect.center):
@@ -61,56 +60,56 @@ class Plant(pygame.sprite.Sprite):
                 self.harvestable = True
 
             self.image = self.frames[int(self.age)]
-            self.rect = self.image
             self.rect = self.image.get_rect(
                 midbottom=self.soil.rect.midbottom + pygame.math.Vector2(0, self.y_offsett)
             )
 
+
 class SoilLayer:
-    """
-    Manages the soil tiles and their interaction in the game world.
-    """
+    """Manages the soil tiles and their interaction in the game world."""
+
     def __init__(self, all_sprites, collision_sprites):
-        # sprite groups
+        # Sprite groups
         self.all_sprites = all_sprites
         self.collision_sprites = collision_sprites
         self.soil_sprites = pygame.sprite.Group()
         self.water_sprites = pygame.sprite.Group()
         self.plant_sprites = pygame.sprite.Group()
 
-        # graphics
+        # Graphics
         self.soil_surfs = import_folder_dict(Path('graphics/soil'))
         self.water_surfs = import_folder(Path('graphics/soil_water'))
-        
-        # create grid and hit rects
+
+        # Create grid and hit rects
         self.create_soil_grid()
         self.create_hit_rects()
 
-        # sounds
-        self.hoe_sound = pygame.mixer.Sound(current_dir.parent / Path('audio/hoe.wav'))
+        # Sounds
+        self.hoe_sound = pygame.mixer.Sound(
+            current_dir.parent / Path('audio/hoe.wav'))
         self.hoe_sound.set_volume(0.1)
 
-        self.plant_sound = pygame.mixer.Sound(current_dir.parent / Path('audio/plant.wav'))
+        self.plant_sound = pygame.mixer.Sound(
+            current_dir.parent / Path('audio/plant.wav'))
         self.plant_sound.set_volume(0.1)
 
     def create_soil_grid(self):
         """
-        Creates a grid based on the 'Farmable' layer from the map, marking farmable spots.
+        Creates a grid based on the 'Farmable' layer from the map,
+        marking farmable spots.
         """
         ground_image = pygame.image.load(Path('graphics/world/ground.png'))
         h_tiles = ground_image.get_width() // TILE_SIZE
         v_tiles = ground_image.get_height() // TILE_SIZE
 
         self.grid = [[[] for _ in range(h_tiles)] for _ in range(v_tiles)]
-        
+
         farmable_layer = load_pygame(Path('data/map.tmx')).get_layer_by_name('Farmable')
         for x, y, _ in farmable_layer.tiles():
             self.grid[y][x].append('F')
 
     def create_hit_rects(self):
-        """
-        Creates hit rectangles for all farmable tiles.
-        """
+        """Creates hit rectangles for all farmable tiles."""
         self.hit_rects = [
             pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
             for y, row in enumerate(self.grid)
@@ -118,9 +117,7 @@ class SoilLayer:
         ]
 
     def get_hit(self, point):
-        """
-        Registers a hit on the soil at the specified point.
-        """
+        """Registers a hit on the soil at the specified point."""
         for rect in self.hit_rects:
             if rect.collidepoint(point):
                 self.hoe_sound.play()
@@ -130,13 +127,13 @@ class SoilLayer:
                 if 'F' in self.grid[y][x]:
                     self.grid[y][x].append('X')
                     self.create_soil_tiles()
-                    
-                    if self.raining:
+
+                    if self.is_raining:
                         self.water_all()
-                    
-    def water(self, tagret_position):
+
+    def water(self, target_position):
         for soil_sprite in self.soil_sprites.sprites():
-            if soil_sprite.rect.collidepoint(tagret_position):
+            if soil_sprite.rect.collidepoint(target_position):
                 x = soil_sprite.rect.x // TILE_SIZE
                 y = soil_sprite.rect.y // TILE_SIZE
                 self.grid[y][x].append('W')
@@ -184,16 +181,23 @@ class SoilLayer:
 
                 if 'P' not in self.grid[y][x]:
                     self.grid[y][x].append('P')
-                    Plant(seed, [self.all_sprites, self.plant_sprites, self.collision_sprites], soil_sprite, self.check_watered)
+                    Plant(
+                        plant_type=seed, 
+                        groups=[
+                            self.all_sprites, 
+                            self.plant_sprites, 
+                            self.collision_sprites
+                        ],
+                        soil=soil_sprite,
+                        check_watered=self.check_watered
+                    )
 
     def update_plants(self):
         for plant in self.plant_sprites.sprites():
             plant.grow()
 
     def create_soil_tiles(self):
-        """
-        Creates and updates soil tiles based on the grid's state.
-        """
+        """Creates and updates soil tiles based on the grid's state."""
         self.soil_sprites.empty()
         for y, row in enumerate(self.grid):
             for x, cell in enumerate(row):
@@ -206,9 +210,7 @@ class SoilLayer:
                     )
 
     def determine_tile_type(self, x, y):
-        """
-        Determines the type of tile to render based on its neighbors.
-        """
+        """Determines the type of tile to render based on its neighbors."""
         top = 'X' in self.grid[y - 1][x] if y > 0 else False
         bottom = 'X' in self.grid[y + 1][x] if y < len(self.grid) - 1 else False
         left = 'X' in self.grid[y][x - 1] if x > 0 else False

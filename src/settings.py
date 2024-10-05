@@ -28,14 +28,14 @@ LAYERS = {
     'water': 0,
     'ground': 1,
     'soil': 2,
-    'soil water': 3,
-    'rain floor': 4,
-    'house bottom': 5,
-    'ground plant': 6,
+    'soil_water': 3,
+    'rain_floor': 4,
+    'house_bottom': 5,
+    'ground_plant': 6,
     'main': 7,
-    'house top': 8,
+    'house_top': 8,
     'fruit': 9,
-    'rain drops': 10
+    'rain_drops': 10
 }
 
 # Apple position data
@@ -47,7 +47,7 @@ APPLE_POSITIONS = {
 # Growth speeds
 GROWTH_SPEED = {
     'corn': 1,
-    'tomato': 0.7
+    'tomato': 1
 }
 
 # Sale prices
