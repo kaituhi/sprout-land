@@ -27,7 +27,9 @@ To run Sprout Land on your local machine, follow these steps:
 ## Controls
 - **WASD**: Move the character.
 - **Space**: Interact with objects.
-- **Enter**: Sleep.
+- **Enter**: Sleep / Open merchant menu when near a merchant.
+- **Q**: Change tools.
+- **E**: Change seeds.
 
 ## Contribution
 
