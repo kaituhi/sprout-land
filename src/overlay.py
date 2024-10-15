@@ -10,16 +10,13 @@ class Overlay:
         self.player = player
 
         # Load overlay graphics
-        overlay_directory = Path('graphics/overlay')
-        self.tool_surfaces = self._load_graphics(
-            overlay_directory, player.tools)
-        self.seed_surfaces = self._load_graphics(
-            overlay_directory, player.seeds)
+        overlay_directory = Path("graphics/overlay")
+        self.tool_surfaces = self._load_graphics(overlay_directory, player.tools)
+        self.seed_surfaces = self._load_graphics(overlay_directory, player.seeds)
 
     def _load_graphics(self, directory, items):
         """Load graphics for tools and seeds from the given directory."""
-        return {item: self._load_image(directory / f'{item}.png') 
-                for item in items}
+        return {item: self._load_image(directory / f"{item}.png") for item in items}
 
     def _load_image(self, file_path):
         """Load a single image and convert it to alpha."""
@@ -28,12 +25,10 @@ class Overlay:
     def display(self):
         """Display the current tool and seed overlays."""
         self._draw_overlay(
-            self.tool_surfaces[self.player.selected_tool],
-            OVERLAY_POSITIONS['tool']
+            self.tool_surfaces[self.player.selected_tool], OVERLAY_POSITIONS["tool"]
         )
         self._draw_overlay(
-            self.seed_surfaces[self.player.selected_seed],
-            OVERLAY_POSITIONS['seed']
+            self.seed_surfaces[self.player.selected_seed], OVERLAY_POSITIONS["seed"]
         )
 
     def _draw_overlay(self, surface, position):

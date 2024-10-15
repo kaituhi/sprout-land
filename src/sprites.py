@@ -6,12 +6,12 @@ from random import randint, choice
 
 class Generic(pygame.sprite.Sprite):
     """Generic sprite class for static objects."""
-    
+
     def __init__(self, position, surf, groups, z=None):
         super().__init__(groups)
         self.image = surf
         self.rect = self.image.get_rect(topleft=position)
-        self.z = LAYERS['main'] if z is None else z
+        self.z = LAYERS["main"] if z is None else z
         self.hitbox = self.rect.copy().inflate(
             -self.rect.width * 0.2, -self.rect.height * 0.75
         )
@@ -26,12 +26,12 @@ class Interaction(Generic):
 
 class Water(Generic):
     """Water sprite class for animated water."""
-    
+
     def __init__(self, position, frames, groups):
         self.frames = frames
         self.frame_index = 0
         super().__init__(
-            position, self.frames[self.frame_index], groups, LAYERS['water']
+            position, self.frames[self.frame_index], groups, LAYERS["water"]
         )
 
     def animate(self, delta_time):
@@ -48,7 +48,7 @@ class Water(Generic):
 
 class WildFlower(Generic):
     """Wildflower sprite class."""
-    
+
     def __init__(self, position, surf, groups):
         super().__init__(position, surf, groups)
         self.hitbox = self.rect.copy().inflate(-20, -self.rect.height * 0.9)
@@ -59,7 +59,7 @@ class Particle(Generic):
         super().__init__(position, surf, groups, z)
         self.start_time = pygame.time.get_ticks()
         self.duration = duration
-        
+
         # White surface
         mask_surf = pygame.mask.from_surface(self.image)
         new_surf = mask_surf.to_surface()
@@ -74,32 +74,31 @@ class Particle(Generic):
 
 class Tree(Generic):
     """Tree sprite class."""
-    
+
     def __init__(self, position, surf, groups, name, add_item):
         super().__init__(position, surf, groups)
-        
+
         # Tree attributes
         self.health = 5
         self.alive = True
         self.stump_surf = pygame.image.load(
-            current_dir.parent / 'graphics' / 'stumps' / f'{name.lower()}.png'
+            current_dir.parent / "graphics" / "stumps" / f"{name.lower()}.png"
         ).convert_alpha()
         self.apple_surf = pygame.image.load(
-            current_dir.parent / 'graphics' / 'fruit' / 'apple.png'
+            current_dir.parent / "graphics" / "fruit" / "apple.png"
         )
         self.apple_position = APPLE_POSITIONS[name]
         self.apple_sprites = pygame.sprite.Group()
         self.create_fruit()
 
         self.add_item = add_item
-        
+
         # Sounds
-        self.axe_sound = pygame.mixer.Sound(
-            current_dir.parent / Path('audio/axe.mp3'))
+        self.axe_sound = pygame.mixer.Sound(current_dir.parent / Path("audio/axe.mp3"))
 
     def damage(self):
         self.health -= 1
-        
+
         # Play sound
         self.axe_sound.play()
 
@@ -109,9 +108,9 @@ class Tree(Generic):
                 position=random_apple.rect.topleft,
                 surf=random_apple.image,
                 groups=self.groups()[0],
-                z=LAYERS['fruit']
+                z=LAYERS["fruit"],
             )
-            self.add_item('apple')
+            self.add_item("apple")
             random_apple.kill()
 
     def create_fruit(self):
@@ -120,11 +119,11 @@ class Tree(Generic):
                 Generic(
                     position=(
                         position[0] + self.rect.left,
-                        position[1] + self.rect.top
+                        position[1] + self.rect.top,
                     ),
                     surf=self.apple_surf,
                     groups=[self.apple_sprites, self.groups()[0]],
-                    z=LAYERS['fruit']
+                    z=LAYERS["fruit"],
                 )
 
     def check_death(self):
@@ -133,14 +132,14 @@ class Tree(Generic):
                 position=self.rect.topleft,
                 surf=self.image,
                 groups=self.groups()[0],
-                z=LAYERS['fruit'],
-                duration=300
+                z=LAYERS["fruit"],
+                duration=300,
             )
             self.image = self.stump_surf
             self.rect = self.image.get_rect(midbottom=self.rect.midbottom)
             self.hitbox = self.rect.copy().inflate(-10, -self.rect.height * 0.6)
             self.alive = False
-            self.add_item('wood')
+            self.add_item("wood")
 
     def update(self, delta_time):
         if self.alive:

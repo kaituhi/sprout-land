@@ -21,9 +21,7 @@ class ScreenTransition:
 
         # Draw the transition effect
         self.display_surface.blit(
-            self.transition_surface, 
-            (0, 0), 
-            special_flags=pygame.BLEND_RGB_MULT
+            self.transition_surface, (0, 0), special_flags=pygame.BLEND_RGB_MULT
         )
 
     def update_color_intensity(self):

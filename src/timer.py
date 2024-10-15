@@ -1,5 +1,6 @@
 import pygame
 
+
 class Timer:
     """A simple timer class to manage countdowns and callbacks."""
 
@@ -21,7 +22,7 @@ class Timer:
 
     def update(self):
         """
-        Updates the timer state, 
+        Updates the timer state,
         checking for expiration and triggering the callback.
         """
         if self.is_active:

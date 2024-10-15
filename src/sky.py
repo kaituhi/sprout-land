@@ -61,32 +61,30 @@ class RainDrop(Generic):
 class Rain:
     def __init__(self, all_sprites):
         self.all_sprites = all_sprites
-        self.rain_drops = import_folder(Path('graphics/rain/drops'))
-        self.rain_floor_sprites = import_folder('graphics/rain/floor')
+        self.rain_drops = import_folder(Path("graphics/rain/drops"))
+        self.rain_floor_sprites = import_folder("graphics/rain/floor")
         self.floor_width, self.floor_height = pygame.image.load(
-            Path('graphics/world/ground.png')
+            Path("graphics/world/ground.png")
         ).get_size()
 
     def create_floor_drop(self):
         """Create a static floor drop."""
         RainDrop(
-            position=(randint(0, self.floor_width),
-                      randint(0, self.floor_height)),
+            position=(randint(0, self.floor_width), randint(0, self.floor_height)),
             surface=choice(self.rain_floor_sprites),
             is_moving=False,
             groups=self.all_sprites,
-            layer=LAYERS['rain_floor']
+            layer=LAYERS["rain_floor"],
         )
 
     def create_moving_drop(self):
         """Create a moving raindrop."""
         RainDrop(
-            position=(randint(0, self.floor_width),
-                      randint(0, self.floor_height)),
+            position=(randint(0, self.floor_width), randint(0, self.floor_height)),
             surface=choice(self.rain_drops),
             is_moving=True,
             groups=self.all_sprites,
-            layer=LAYERS['rain_drops']
+            layer=LAYERS["rain_drops"],
         )
 
     def update(self):

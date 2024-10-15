@@ -5,10 +5,7 @@ from pytmx.util_pygame import load_pygame
 from settings import *
 from player import Player
 from overlay import Overlay
-from sprites import (
-    Generic, Water, WildFlower, Tree,
-    Interaction, Particle
-)
+from sprites import Generic, Water, WildFlower, Tree, Interaction, Particle
 from support import import_folder
 from transition import ScreenTransition
 from soil import SoilLayer
@@ -21,21 +18,21 @@ class Level:
         """Initialize the level, load the display surface, and set up sprite groups."""
         self.display_surface = pygame.display.get_surface()
         self.sprite_groups = {
-            'all': CameraGroup(),
-            'collision': pygame.sprite.Group(),
-            'trees': pygame.sprite.Group(),
-            'interactions': pygame.sprite.Group(),
+            "all": CameraGroup(),
+            "collision": pygame.sprite.Group(),
+            "trees": pygame.sprite.Group(),
+            "interactions": pygame.sprite.Group(),
         }
 
-        self.player = None
-        self.soil_layer = SoilLayer(self.sprite_groups['all'], 
-                                    self.sprite_groups['collision'])
+        self.soil_layer = SoilLayer(
+            self.sprite_groups["all"], self.sprite_groups["collision"]
+        )
         self.setup_level()
-        self.overlay = Overlay(self.player)  # Pass player after it's been set up
+        self.overlay = Overlay(self.player)
         self.transition = ScreenTransition(self.reset, self.player)
 
         # Sky and Weather
-        self.rain = Rain(self.sprite_groups['all'])
+        self.rain = Rain(self.sprite_groups["all"])
         self.is_raining = randint(0, 10) > 3
         self.soil_layer.is_raining = self.is_raining
         self.sky = Sky()
@@ -46,19 +43,13 @@ class Level:
 
         # Sound Effects
         self.success_sound = pygame.mixer.Sound(
-            current_dir.parent / Path('audio/success.wav')
+            current_dir.parent / Path("audio/success.wav")
         )
         self.success_sound.set_volume(0.3)
 
-        self.background_music = pygame.mixer.Sound(
-            current_dir.parent / Path('audio/music.mp3')
-        )
-        self.background_music.set_volume(0.3)
-        self.background_music.play(loops=-1)
-
     def setup_level(self):
         """Load the level from the TMX file and initialize sprites."""
-        tmx_data = load_pygame(Path('data/map.tmx'))
+        tmx_data = load_pygame(Path("data/map.tmx"))
         self.load_environment(tmx_data)
         self.load_player(tmx_data)
 
@@ -84,86 +75,106 @@ class Level:
     def load_houses(self, tmx_data):
         """Load house-related sprites from the TMX data."""
         house_layers = [
-            'HouseFloor',
-            'HouseFurnitureBottom',
-            'HouseWalls',
-            'HouseFurnitureTop'
+            "HouseFloor",
+            "HouseFurnitureBottom",
+            "HouseWalls",
+            "HouseFurnitureTop",
         ]
         for layer in house_layers:
             for x, y, surf in tmx_data.get_layer_by_name(layer).tiles():
-                z_order = LAYERS['house_bottom'] if layer in [
-                    'HouseFloor', 'HouseFurnitureBottom'
-                ] else None
-                Generic((x * TILE_SIZE, y * TILE_SIZE), surf,
-                        self.sprite_groups['all'], z_order)
+                z_order = (
+                    LAYERS["house_bottom"]
+                    if layer in ["HouseFloor", "HouseFurnitureBottom"]
+                    else None
+                )
+                Generic(
+                    (x * TILE_SIZE, y * TILE_SIZE),
+                    surf,
+                    self.sprite_groups["all"],
+                    z_order,
+                )
 
     def load_fences(self, tmx_data):
         """Load fence sprites."""
-        for x, y, surf in tmx_data.get_layer_by_name('Fence').tiles():
-            Generic((x * TILE_SIZE, y * TILE_SIZE), surf,
-                    [self.sprite_groups['all'], self.sprite_groups['collision']])
+        for x, y, surf in tmx_data.get_layer_by_name("Fence").tiles():
+            Generic(
+                (x * TILE_SIZE, y * TILE_SIZE),
+                surf,
+                [self.sprite_groups["all"], self.sprite_groups["collision"]],
+            )
 
     def load_water(self, tmx_data):
         """Load water sprites."""
-        water_frames = import_folder(Path('graphics/water'))
-        for x, y, _ in tmx_data.get_layer_by_name('Water').tiles():
-            Water((x * TILE_SIZE, y * TILE_SIZE), water_frames,
-                  self.sprite_groups['all'])
+        water_frames = import_folder(Path("graphics/water"))
+        for x, y, _ in tmx_data.get_layer_by_name("Water").tiles():
+            Water(
+                (x * TILE_SIZE, y * TILE_SIZE), water_frames, self.sprite_groups["all"]
+            )
 
     def load_trees(self, tmx_data):
         """Load tree sprites."""
-        for obj in tmx_data.get_layer_by_name('Trees'):
+        for obj in tmx_data.get_layer_by_name("Trees"):
             Tree(
                 position=(obj.x, obj.y),
                 surf=obj.image,
-                groups=[self.sprite_groups['all'],
-                        self.sprite_groups['collision'],
-                        self.sprite_groups['trees']],
+                groups=[
+                    self.sprite_groups["all"],
+                    self.sprite_groups["collision"],
+                    self.sprite_groups["trees"],
+                ],
                 name=obj.name,
-                add_item=self.add_item_to_player_inventory
+                add_item=self.add_item_to_player_inventory,
             )
 
     def load_wildflowers(self, tmx_data):
         """Load wildflower sprites."""
-        for obj in tmx_data.get_layer_by_name('Decoration'):
-            WildFlower((obj.x, obj.y), obj.image,
-                       [self.sprite_groups['all'], self.sprite_groups['collision']])
+        for obj in tmx_data.get_layer_by_name("Decoration"):
+            WildFlower(
+                (obj.x, obj.y),
+                obj.image,
+                [self.sprite_groups["all"], self.sprite_groups["collision"]],
+            )
 
     def load_collision_tiles(self, tmx_data):
         """Load collision tiles."""
-        for x, y, _ in tmx_data.get_layer_by_name('Collision').tiles():
-            Generic((x * TILE_SIZE, y * TILE_SIZE),
-                    pygame.Surface((TILE_SIZE, TILE_SIZE)),
-                    self.sprite_groups['collision'])
+        for x, y, _ in tmx_data.get_layer_by_name("Collision").tiles():
+            Generic(
+                (x * TILE_SIZE, y * TILE_SIZE),
+                pygame.Surface((TILE_SIZE, TILE_SIZE)),
+                self.sprite_groups["collision"],
+            )
 
     def load_player(self, tmx_data):
         """Load the player sprite from TMX data."""
-        for obj in tmx_data.get_layer_by_name('Player'):
-            if obj.name == 'Start':
+        for obj in tmx_data.get_layer_by_name("Player"):
+            if obj.name == "Start":
                 self.player = Player(
                     position=(obj.x, obj.y),
-                    group=self.sprite_groups['all'],
-                    collision_sprites=self.sprite_groups['collision'],
-                    tree_sprites=self.sprite_groups['trees'],
-                    interaction=self.sprite_groups['interactions'],
+                    group=self.sprite_groups["all"],
+                    collision_sprites=self.sprite_groups["collision"],
+                    tree_sprites=self.sprite_groups["trees"],
+                    interaction=self.sprite_groups["interactions"],
                     soil_layer=self.soil_layer,
-                    toggle_shop=self.toggle_shop
+                    toggle_shop=self.toggle_shop,
                 )
-            elif obj.name in ['Bed', 'Trader']:
-                Interaction((obj.x, obj.y),
-                            (obj.width, obj.height),
-                            self.sprite_groups['interactions'],
-                            obj.name)
+            elif obj.name in ["Bed", "Trader"]:
+                Interaction(
+                    (obj.x, obj.y),
+                    (obj.width, obj.height),
+                    self.sprite_groups["interactions"],
+                    obj.name,
+                )
 
     def load_ground(self):
         """Load the ground sprite."""
         ground_surface = pygame.image.load(
-            Path('graphics/world/ground.png')).convert_alpha()
+            Path("graphics/world/ground.png")
+        ).convert_alpha()
         Generic(
             position=(0, 0),
             surf=ground_surface,
-            groups=self.sprite_groups['all'],
-            z=LAYERS['ground']
+            groups=self.sprite_groups["all"],
+            z=LAYERS["ground"],
         )
 
     def toggle_shop(self):
@@ -179,7 +190,7 @@ class Level:
         if self.is_raining:
             self.soil_layer.water_all()
 
-        for tree in self.sprite_groups['trees'].sprites():
+        for tree in self.sprite_groups["trees"].sprites():
             for apple in tree.apple_sprites.sprites():
                 apple.kill()
             tree.create_fruit()
@@ -193,20 +204,25 @@ class Level:
                 if plant.harvestable and plant.rect.colliderect(self.player.hitbox):
                     self.add_item_to_player_inventory(plant.plant_type)
                     plant.kill()
-                    Particle(plant.rect.topleft, plant.image,
-                             self.sprite_groups['all'], z=LAYERS['main'])
+                    Particle(
+                        plant.rect.topleft,
+                        plant.image,
+                        self.sprite_groups["all"],
+                        z=LAYERS["main"],
+                    )
                     self.soil_layer.grid[plant.rect.centery // TILE_SIZE][
-                        plant.rect.centerx // TILE_SIZE].remove('P')
+                        plant.rect.centerx // TILE_SIZE
+                    ].remove("P")
 
     def run(self, delta_time):
         """Update and draw the level."""
-        self.display_surface.fill('black')
-        self.sprite_groups['all'].custom_draw(self.player)
+        self.display_surface.fill("black")
+        self.sprite_groups["all"].custom_draw(self.player)
 
         if self.is_shop_active:
             self.menu.update()
         else:
-            self.sprite_groups['all'].update(delta_time)
+            self.sprite_groups["all"].update(delta_time)
             self.check_plant_collision()
 
         self.overlay.display()
@@ -231,7 +247,9 @@ class CameraGroup(pygame.sprite.Group):
         self.offset.y = player.rect.centery - SCREEN_HEIGHT / 2
 
         for layer in LAYERS.values():
-            for sprite in sorted(self.sprites(), key=lambda sprite: sprite.rect.centery):
+            for sprite in sorted(
+                self.sprites(), key=lambda sprite: sprite.rect.centery
+            ):
                 if sprite.z == layer:
                     offset_rect = sprite.rect.copy()
                     offset_rect.center -= self.offset
